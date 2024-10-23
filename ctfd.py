@@ -5,9 +5,26 @@ import os
 
 from utils import *
 
-"""
-There are multiple ways we can go about this.
-"""
+
+def do_checks():
+
+    config = get_config(_config)
+
+    if not config and not args.url:
+        logger.error("Configuration file not found. Please run `ctfd setup` to generate it first or specify url with --url")
+        exit(1)
+    
+    args.url = config["CTFD"]["URL"] if not args.url else args.url
+
+    if not args.url:
+        logger.error("No URL specified. Please check configuration or --url.")
+        exit(1)
+
+    args.token = config["CTFD"]["TOKEN"]
+    if args.token and not args.force:
+        logger.error("Token already exists in the configuration file. Please specify --force to overwrite it.")
+        exit(1)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Auto-CTFd CLI')
@@ -29,15 +46,24 @@ if __name__ == "__main__":
     generator_parser.add_argument('--password', type=str, help='Password for CTFd user')
     generator_parser.add_argument('--force', action='store_true',help='Overwrite token if already exists in the config file.', default=False)
  
+    # Subparser to download all the challenges
+    challs_parser = subparsers.add_parser('challenges', help="Download challenges currently in CTFd")
+    challs_parser.add_argument('--category', '-c', type=str, help="Download challenges of a specific category", default=None)
+    challs_parser.add_argument('--name', '-n', type=str, help="Download a specific challenge", default=None)
+
+    # Subparser for flag submission
+    submit_parser = subparsers.add_parser('submit', help="Submit flags for the challenges in CTFd")
+    submit_parser.add_argument('--challenge-id', '-i', type=str, help="Challenge ID", default=None)
+    submit_parser.add_argument('--challenge-name', '-n', type=str, help="Challenge Name (We'll fetch the challenge-id for you)", default=None)
+    submit_parser.add_argument('--flag', '-f', type=str, help="The flag that you want to submit for the challenge.", default=None)
+
     args = parser.parse_args()
 
     # default config
     _config = os.path.join(args.config_dir, ".config")
 
     if args.mode == "setup":
-        """
         
-        """
         if not args.url:
             args.url = input("Enter the CTFd URL: ")
 
@@ -63,22 +89,7 @@ if __name__ == "__main__":
         But we'll manually login first, then using the CSRF-Token to interact
         with the API.
         """
-        config = get_config(_config)
-
-        if not config and not args.url:
-            logger.error("Configuration file not found. Please run `ctfd setup` to generate it first or specify url with --url")
-            exit(1)
-        
-        args.url = config["CTFD"]["URL"] if not args.url else args.url
-
-        if not args.url:
-            logger.error("No URL specified. Please check configuration or --url.")
-            exit(1)
-
-        args.token = config["CTFD"]["TOKEN"]
-        if args.token and not args.force:
-            logger.error("Token already exists in the configuration file. Please specify --force to overwrite it.")
-            exit(1)
+        do_checks()
 
         generator = GenerateToken(args.url, args.name, args.password)
         args.token = generator.generate_token()
@@ -87,7 +98,15 @@ if __name__ == "__main__":
         logger.info(f"Successfully generated token and written to {_config}")
 
     elif args.mode == "challenges":
+        """
+        Idea for future reference:
+
+        We can create a ./submit.sh in each folder that, once invoked with flag as $1, will auto submit
+        the flag because it will already contain the challenge-id
+        """
+        do_checks()
         pass
 
     elif args.mode == "submit":
+        do_checks()
         pass

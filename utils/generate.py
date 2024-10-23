@@ -1,6 +1,7 @@
 import requests
 import re
-from utils import fix_url, get_env, logger
+from .utils import fix_url, get_env
+from .logger import logger
 from datetime import datetime
 
 class GenerateToken(object):
