@@ -4,7 +4,6 @@ import argparse
 import os
 
 from utils import *
-from generate import GenerateToken
 
 """
 There are multiple ways we can go about this.
