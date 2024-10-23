@@ -53,32 +53,3 @@ class CTFd_Handler:
             url=f"{self.ctfd.ctfd_instance}/api/v1/challenges",
             token=self.ctfd.ctfd_token
         ).json()["data"]
-    
-    def __modify_challenge__(self, id: int, mode: str):
-        return RequestHandler.MakeRequest(
-            mode=Mode.PATCH,
-            url=f"{self.ctfd.ctfd_instance}/api/v1/challenges/{id}",
-            token=self.ctfd.ctfd_token,
-            json={ "state": mode }
-        ).json()["data"]
-
-    def get_challenge_state(self, id: int):
-        return RequestHandler.MakeRequest(
-            mode=Mode.GET,
-            url=f"{self.ctfd.ctfd_instance}/api/v1/challenges/{id}",
-            token=self.ctfd.ctfd_token
-        ).json()["data"]["state"]
-
-    def unhide_challenge(self, id: int):
-        return self.__modify_challenge__(id, "visible")
-    
-    def hide_challenge(self, id: int):
-        return self.__modify_challenge__(id, "hidden")
-
-    def notify(self, msg: str, title: str):
-        return RequestHandler.MakeRequest(
-            mode=Mode.POST,
-            url=f"{self.ctfd.ctfd_instance}/api/v1/notifications",
-            token=self.ctfd.ctfd_token,
-            json={"title": title, "content": msg}
-        ).json()
