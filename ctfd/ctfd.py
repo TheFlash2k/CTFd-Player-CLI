@@ -61,6 +61,13 @@ def get_challenges(attr: str = "name"):
         return ["No challenges found. Please run `ctfd sync` to fetch the challenges from CTFd."]
     return list(set([chal[attr] for chal in challenges]))
 
+def get_container_challenges(attr: str = "name"):
+    _config = get_config(os.path.join(os.getcwd(), ".ctfd/config.json"))
+    challenges = _config.get("Challenges", None)
+    if not challenges:
+        return ["No challenges found. Please run `ctfd sync` to fetch the challenges from CTFd."]
+    return [chal[attr] for chal in challenges if chal["type"] == "container"]
+
 def main():
     parser = argparse.ArgumentParser(description='CTFd CLI for CTF Players to automate their workflows.')
     parser.add_argument('--config-dir', '-c', type=str, help='The directory where the configuration will be stored', default='.ctfd', dest='config_dir')
@@ -101,8 +108,8 @@ def main():
     # Subparser for instancer
     instance_parser = subparsers.add_parser('instance', help="Start an instance for a specific challenge in CTFd")
     instance_parser.add_argument('instance_mode', type=str, help="Start, stop or extend the instance", choices=["start", "stop", "extend"])
-    instance_parser.add_argument('--challenge-id', '-i', type=int, help="Challenge ID", default=None, dest='chal_id', choices=get_challenges("id"))
-    instance_parser.add_argument('--challenge-name', '-n', type=str, help="Challenge Name (We'll fetch the challenge-id for you)", default=None, dest='chal_name', choices=get_challenges("name"))
+    instance_parser.add_argument('--challenge-id', '-i', type=int, help="Challenge ID", default=None, dest='chal_id', choices=get_container_challenges("id"))
+    instance_parser.add_argument('--challenge-name', '-n', type=str, help="Challenge Name (We'll fetch the challenge-id for you)", default=None, dest='chal_name', choices=get_container_challenges("name"))
 
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
