@@ -31,7 +31,13 @@ What this will do is generate a token for you. There also is a parameter called 
 
 > The token and URL will be stored in `.ctfd/config.json`.
 
-After this, in order to fetch a challenge, you can use `challenges` command.
+Once this is done, you need to get the list of all challenges, these challenges name and id will be stored inside the `.ctfd/config.json` file. The command used will be:
+
+```bash
+$ ctfd sync
+```
+
+After this, in order to fetch a challenge's attachments and details, you can use `challenges` command.
 
 ```bash
 $ ctfd challenges [--category <category>] [--name <challenge-name>]
