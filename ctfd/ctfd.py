@@ -250,11 +250,7 @@ def main():
                     fp.write(f"**Files**:\n")
                     for file in _files:
                         fp.write(f"- [{os.path.basename(file)}]({file})\n")
-                if hints := _chal.get("hints", []):
-                    fp.write(f"**Hints**:\n")
-                    for hint in hints:
-                        fp.write(f"- {hint}\n")
-
+            
             update_challenge(_config, chal.id, "is_downloaded", True)
             logger.info(f"Successfully downloaded {chal.name}")
 
