@@ -54,13 +54,20 @@ def check_downloaded_challenges(_chals, chals_folder):
         if os.path.exists(chal_info):
             challenge["is_downloaded"] = True
 
+def get_challenges(attr: str = "name"):
+    _config = get_config(os.path.join(os.getcwd(), ".ctfd/config.json"))
+    challenges = _config.get("Challenges", None)
+    if not challenges:
+        return ["No challenges found. Please run `ctfd sync` to fetch the challenges from CTFd."]
+    return list(set([chal[attr] for chal in challenges]))
+
 def main():
     parser = argparse.ArgumentParser(description='CTFd CLI for CTF Players to automate their workflows.')
     parser.add_argument('--config-dir', '-c', type=str, help='The directory where the configuration will be stored', default='.ctfd', dest='config_dir')
     parser.add_argument('--skip', '-s', action='store_true', help='Skip checking connection to CTFd instance', default=False, dest='skip')
 
     # Default args
-    subparsers = parser.add_subparsers(required=True, dest='mode')
+    subparsers = parser.add_subparsers(title='Mode to operate the CLI in', dest='mode')
     
     # Subparser for setting up the CTF folder structure
     setup_parser = subparsers.add_parser('setup', help="Setup the CTFd folder")
@@ -81,27 +88,26 @@ def main():
 
     # Subparser to download all the challenges
     challs_parser = subparsers.add_parser('challenges', help="Download challenges currently in CTFd")
-    challs_parser.add_argument('--category', '-c', type=str, help="Download challenges of a specific category", default=None)
-    challs_parser.add_argument('--name', '-n', type=str, help="Download a specific challenge", default=None)
+    challs_parser.add_argument('--category', '-c', type=str, help="Download challenges of a specific category", default=None, choices=get_challenges("category"))
+    challs_parser.add_argument('--name', '-n', type=str, help="Download a specific challenge", default=None, choices=get_challenges("name"))
     challs_parser.add_argument('--force', '-f', action='store_true',help='Overwrite challenges download files if already downloaded', default=False)
 
     # Subparser for flag submission
     submit_parser = subparsers.add_parser('submit', help="Submit flags for the challenges in CTFd")
-    submit_parser.add_argument('--challenge-id', '-i', type=int, help="Challenge ID", default=None, dest='chal_id')
-    submit_parser.add_argument('--challenge-name', '-n', type=str, help="Challenge Name (We'll fetch the challenge-id for you)", default=None, dest='chal_name')
+    submit_parser.add_argument('--challenge-id', '-i', type=int, help="Challenge ID", default=None, dest='chal_id', choices=get_challenges("id"))
+    submit_parser.add_argument('--challenge-name', '-n', type=str, help="Challenge Name (We'll fetch the challenge-id for you)", default=None, dest='chal_name', choices=get_challenges("name"))
     submit_parser.add_argument('--flag', '-f', type=str, help="The flag that you want to submit for the challenge.", default=None)
 
     # Subparser for instancer
     instance_parser = subparsers.add_parser('instance', help="Start an instance for a specific challenge in CTFd")
     instance_parser.add_argument('instance_mode', type=str, help="Start, stop or extend the instance", choices=["start", "stop", "extend"])
-    instance_parser.add_argument('--challenge-id', '-i', type=int, help="Challenge ID", default=None, dest='chal_id')
-    instance_parser.add_argument('--challenge-name', '-n', type=str, help="Challenge Name (We'll fetch the challenge-id for you)", default=None, dest='chal_name')
+    instance_parser.add_argument('--challenge-id', '-i', type=int, help="Challenge ID", default=None, dest='chal_id', choices=get_challenges("id"))
+    instance_parser.add_argument('--challenge-name', '-n', type=str, help="Challenge Name (We'll fetch the challenge-id for you)", default=None, dest='chal_name', choices=get_challenges("name"))
 
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
     # default config
-    # get full path of args.config_dir:
     args.config_dir = os.path.abspath(args.config_dir)
     _config = os.path.join(args.config_dir, "config.json")
     chals_folder = "challenges"
