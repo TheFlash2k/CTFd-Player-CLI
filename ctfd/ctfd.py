@@ -219,7 +219,7 @@ def main():
             category_folder = os.path.join(chals_folder, _chal["category"])
             os.makedirs(category_folder, exist_ok=True)
 
-            chal_folder = os.path.join(category_folder, _chal['name'].replace(" ", "-").lower())
+            chal_folder = os.path.join(category_folder, _chal['name'].replace(" ", "-"))
             os.makedirs(chal_folder, exist_ok=True)
             chal_info = os.path.join(chal_folder, "README.md")
 
