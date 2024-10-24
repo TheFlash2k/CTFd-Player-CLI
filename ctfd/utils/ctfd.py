@@ -3,28 +3,19 @@ from .handler import RequestHandler, Mode, requests
 from .utils import get_env, fix_url
 
 class CTFd:
-    def __init__(self, instance: str, token: str, check_token = True, check_conn = True):
+    def __init__(self, instance: str, token: str, skip: bool = False):
         
         self.ctfd_instance = get_env(key="CTFD_URL", curr=instance, err_msg="Environment variable \"CTFD_URL\" is not set")
+        self.ctfd_token = get_env(key="CTFD_TOKEN", curr=token, err_msg="Environment variable \"CTFD_TOKEN\" is not set")
 
-        if check_token:
-            self.ctfd_token = get_env(key="CTFD_TOKEN", curr=token, err_msg="Environment variable \"CTFD_TOKEN\" is not set")
-
-        else:
-            return
-
-        if len(self.ctfd_instance) == 0:
-            if len(self.ctfd_token) == 0 and check_token:
-                logger.error("CTFd token is not set.")
-            else:
-                logger.error("CTFd instance is not set.")
+        if len(self.ctfd_instance) == 0 or len(self.ctfd_token) == 0:
+            logger.error("CTFd instance/token is not set.")
             exit(1)
 
         self.ctfd_instance = fix_url(url=self.ctfd_instance)
 
-        logger.info(f"CTFd url: {self.ctfd_instance}")
-
-        if check_conn:
+        if not skip:
+            logger.info(f"CTFd url: {self.ctfd_instance}")
             logger.info(f"Checking connection to CTFd version.")
             if not self.is_working():
                 logger.error("CTFd instance is not working.")
@@ -69,8 +60,8 @@ class ChallengeModel:
 
 class CTFd_Handler:
     """ This class' methods will be used for interaction with the CTFd instance. """
-    def __init__(self, instance: str, token: str):
-        self.ctfd = CTFd(instance=instance, token=token)
+    def __init__(self, instance: str, token: str, skip: bool = False):
+        self.ctfd = CTFd(instance=instance, token=token, skip=skip)
     
     def get_challenges(self) -> list:
         """

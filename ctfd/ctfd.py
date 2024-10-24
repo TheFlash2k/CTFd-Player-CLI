@@ -2,9 +2,9 @@
 
 import argparse
 import os
-from utils import *
+from .utils import *
 
-def do_checks(check_token=False, check_challenges=False):
+def do_checks(args, _config, check_token=False, check_challenges=False):
 
     global config
     config = get_config(_config)
@@ -32,7 +32,7 @@ def do_checks(check_token=False, check_challenges=False):
             logger.error("No challenges found. Please run `ctfd sync` to fetch the challenges from CTFd.")
             exit(1)
 
-def check_downloaded_challenges(_chals):
+def check_downloaded_challenges(_chals, chals_folder):
     """
     Check if the challenges are already downloaded. If they are, we'll update the attribute `is_downloaded` to True
     for the challenges that are already downloaded.
@@ -53,12 +53,13 @@ def check_downloaded_challenges(_chals):
         if os.path.exists(chal_info):
             challenge["is_downloaded"] = True
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description='Auto-CTFd CLI')
+    parser.add_argument('--config-dir', '-c', type=str, help='The directory where the configuration will be stored', default='.ctfd', dest='config_dir')
+    parser.add_argument('--skip', '-s', action='store_true', help='Skip checking connection to CTFd instance', default=False, dest='skip')
 
     # Default args
     subparsers = parser.add_subparsers(required=True, dest='mode')
-    parser.add_argument('--config-dir', '-c', type=str, help='The directory where the configuration will be stored', default='.ctfd', dest='config_dir')
     
     # Subparser for setting up the CTF folder structure
     setup_parser = subparsers.add_parser('setup', help="Setup the CTFd folder")
@@ -98,6 +99,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # default config
+    # get full path of args.config_dir:
+    args.config_dir = os.path.abspath(args.config_dir)
     _config = os.path.join(args.config_dir, "config.json")
     chals_folder = "challenges"
 
@@ -128,7 +131,7 @@ if __name__ == "__main__":
         But we'll manually login first, then using the CSRF-Token to interact
         with the API.
         """
-        do_checks()
+        do_checks(args, _config)
 
         if args.token and not args.force:
             logger.error("Token already exists in the configuration file. Please specify --force to overwrite it.")
@@ -145,13 +148,13 @@ if __name__ == "__main__":
         """
         Sync will fetch all the existing challenges from the CTFd instance and write it to the configuration file.
         """
-        do_checks(check_token=True)
+        do_checks(args, _config, check_token=True)
 
         if config.get("Challenges", "") and not args.force:
             logger.error("Challenges already exist in the configuration file. Please specify --force to refetch and update it.")
             exit(1)
 
-        ctfd = CTFd_Handler(args.url, args.token)
+        ctfd = CTFd_Handler(args.url, args.token, args.skip)
         logger.info("Fetching all the challenges deployed on CTFd")
         challenges = ctfd.get_challenges()
         
@@ -161,7 +164,7 @@ if __name__ == "__main__":
             logger.info(f"Found {chal} of category {chal.category}")
             _chals.append(chal.__dict__())
         
-        check_downloaded_challenges(_chals)
+        check_downloaded_challenges(_chals, chals_folder)
 
         write_config("Challenges", _chals, _config, mode="a")
 
@@ -172,7 +175,7 @@ if __name__ == "__main__":
         We will also copy ./templates/submit.sh and ./templates/launch.sh in each folder that, once invoked with flag as $1, will auto submit
         the flag because it will already contain the challenge-id and launch an instance of the challenge (if there is), respectively.
         """
-        do_checks(check_token=True, check_challenges=True)
+        do_checks(args, _config, check_token=True, check_challenges=True)
 
         if args.category:
             challenges = config["Challenges"]
@@ -197,7 +200,7 @@ if __name__ == "__main__":
             logger.error("No challenges found. Please run `ctfd sync` to fetch the challenges from CTFd.")
             exit(1)
 
-        ctfd = CTFd_Handler(args.url, args.token)
+        ctfd = CTFd_Handler(args.url, args.token, args.skip)
 
         for challenge in challenges:
             chal = ChallengeModel(**challenge)
@@ -245,18 +248,18 @@ if __name__ == "__main__":
 
             submit_sh_template = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates/submit.sh")
 
-            update_template(submit_sh_template, os.path.join(chal_folder, "submit.sh"), chal.id)
+            update_template(submit_sh_template, os.path.join(chal_folder, "submit.sh"), chal.id, args.config_dir)
 
             if chal.type == "container":
                 launch_sh_template = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates/launch.sh")
-                update_template(launch_sh_template, os.path.join(chal_folder, "launch.sh"), chal.id)
+                update_template(launch_sh_template, os.path.join(chal_folder, "launch.sh"), chal.id, args.config_dir)
 
             logger.info(f"Successfully copied submit.sh {'and launch.sh' if chal.type == 'container' else ''} to {chal_folder}")
 
         logger.info("All challenges downloaded successfully.")
 
     elif args.mode == "submit":
-        do_checks(check_token=True)
+        do_checks(args, _config, check_token=True)
 
         if not args.chal_id and not args.chal_name:
             logger.error("Please specify either challenge ID or challenge Name")
@@ -295,7 +298,7 @@ if __name__ == "__main__":
                 logger.error(f"No challenge found for ID {args.chal_id}")
                 exit(1)
 
-        ctfd = CTFd_Handler(args.url, args.token)
+        ctfd = CTFd_Handler(args.url, args.token, args.skip)
         logger.info(f"Submitting flag for {chal}")
 
         resp = ctfd.submit_flag(chal.id, args.flag)
@@ -313,7 +316,7 @@ if __name__ == "__main__":
             logger.error(f"Flag submission failed. Reason: {resp['message']}")
 
     elif args.mode == "instance":
-        do_checks(check_token=True)
+        do_checks(args, _config, check_token=True)
         
         if not args.chal_id and not args.chal_name:
             logger.error("Please specify either challenge ID or challenge Name")
@@ -349,7 +352,7 @@ if __name__ == "__main__":
             logger.error(f"Challenge {chal.name} is not a container challenge.")
             exit(1)
         
-        ctfd = CTFd_Handler(args.url, args.token)
+        ctfd = CTFd_Handler(args.url, args.token, args.skip)
         logger.info(f"Starting instance for {chal}")
 
         if args.instance_mode == "start":

@@ -62,7 +62,7 @@ def update_challenge(_config: str, _id: int, _key: str, _value: str) -> None:
 
     write_config("Challenges", _, _config, mode="a")
 
-def update_template(_src: str, _dst: str, _id: int) -> None:
+def update_template(_src: str, _dst: str, _id: int, _config: str) -> None:
 
     """
     This could be done in a better way but if it works, it works.
@@ -71,7 +71,7 @@ def update_template(_src: str, _dst: str, _id: int) -> None:
     with open(_src) as fp:
         content = fp.read()
 
-    content = content.format(CHALLENGE_ID=_id)
+    content = content.format(CHALLENGE_ID=_id, CONFIG_DIR=_config)
 
     with open(_dst, "w") as fp:
         fp.write(content)
