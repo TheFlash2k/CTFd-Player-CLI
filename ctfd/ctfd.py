@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import argcomplete
 import os
 from .utils import *
 
@@ -54,7 +55,7 @@ def check_downloaded_challenges(_chals, chals_folder):
             challenge["is_downloaded"] = True
 
 def main():
-    parser = argparse.ArgumentParser(description='Auto-CTFd CLI')
+    parser = argparse.ArgumentParser(description='CTFd CLI for CTF Players to automate their workflows.')
     parser.add_argument('--config-dir', '-c', type=str, help='The directory where the configuration will be stored', default='.ctfd', dest='config_dir')
     parser.add_argument('--skip', '-s', action='store_true', help='Skip checking connection to CTFd instance', default=False, dest='skip')
 
@@ -96,6 +97,7 @@ def main():
     instance_parser.add_argument('--challenge-id', '-i', type=int, help="Challenge ID", default=None, dest='chal_id')
     instance_parser.add_argument('--challenge-name', '-n', type=str, help="Challenge Name (We'll fetch the challenge-id for you)", default=None, dest='chal_name')
 
+    argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
     # default config
@@ -242,6 +244,10 @@ def main():
                     fp.write(f"**Files**:\n")
                     for file in _files:
                         fp.write(f"- [{os.path.basename(file)}]({file})\n")
+                if hints := _chal.get("hints", []):
+                    fp.write(f"**Hints**:\n")
+                    for hint in hints:
+                        fp.write(f"- {hint}\n")
 
             update_challenge(_config, chal.id, "is_downloaded", True)
             logger.info(f"Successfully downloaded {chal.name}")
