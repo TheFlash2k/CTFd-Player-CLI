@@ -389,10 +389,10 @@ def main():
             exit(1)
         
         ctfd = CTFd_Handler(args.url, args.token, args.skip)
-        logger.info(f"Starting instance for {chal}")
 
         if args.instance_mode == "start":
 
+            logger.info(f"Starting instance for {chal}")
             resp = ctfd.start_instance(chal.id)
             if not resp:
                 logger.error(f"Failed to start instance for {chal.name}")
@@ -411,6 +411,7 @@ def main():
             logger.info(f"Connect: \033[91m\033[4m\033[1m{_i}\033[0m")
 
         elif args.instance_mode == "extend":
+            logger.info(f"Extending instance time for {chal}")
             resp = ctfd.extend_instance(chal.id)
             if not resp:
                 logger.error(f"Failed to extend instance for {chal.name}")
@@ -425,6 +426,7 @@ def main():
             logger.info(f"Connect: \033[91m\033[4m\033[1m{_i}\033[0m")
 
         elif args.instance_mode == "stop":
+            logger.info(f"Stopping instance for {chal}")
             resp = ctfd.stop_instance(chal.id)
             if not resp:
                 logger.error(f"Failed to stop instance for {chal.name}")
