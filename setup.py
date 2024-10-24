@@ -11,7 +11,9 @@ setup(
     include_package_data=True,  # Ensures templates and other non-code files are included
     install_requires=[
         "python-dotenv==1.0.1",
-        "Requests==2.32.3"
+        "Requests==2.32.3",
+        "argcomplete",
+        "argparse"
     ],
     entry_points={
         'console_scripts': [
