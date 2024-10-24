@@ -54,18 +54,34 @@ def check_downloaded_challenges(_chals, chals_folder):
         if os.path.exists(chal_info):
             challenge["is_downloaded"] = True
 
+def _get_path() -> str:
+    _path = os.path.join(os.getcwd(), ".ctfd")
+    if not os.path.exists(_path):
+        if os.path.exists("/tmp/.ctfd.cache"):
+            with open("/tmp/.ctfd.cache") as fp:
+                _path = fp.read().strip()
+        else:
+            return None
+    return os.path.join(_path, "config.json")
+
 def get_challenges(attr: str = "name"):
-    _config = get_config(os.path.join(os.getcwd(), ".ctfd/config.json"))
+
+    if not (_path := _get_path()):
+        return None
+    _config = get_config(_path)
+
     challenges = _config.get("Challenges", None)
-    if not challenges:
-        return ["No challenges found. Please run `ctfd sync` to fetch the challenges from CTFd."]
+    if not challenges: return None
     return list(set([chal[attr] for chal in challenges]))
 
 def get_container_challenges(attr: str = "name"):
-    _config = get_config(os.path.join(os.getcwd(), ".ctfd/config.json"))
+
+    if not (_path := _get_path()):
+        return None
+    
+    _config = get_config(_path)
     challenges = _config.get("Challenges", None)
-    if not challenges:
-        return ["No challenges found. Please run `ctfd sync` to fetch the challenges from CTFd."]
+    if not challenges: return None
     return [chal[attr] for chal in challenges if chal["type"] == "container"]
 
 def main():
@@ -117,6 +133,11 @@ def main():
     # default config
     args.config_dir = os.path.abspath(args.config_dir)
     _config = os.path.join(args.config_dir, "config.json")
+
+    # store the last config file path in /tmp/.ctfd.cache
+    with open("/tmp/.ctfd.cache", "w") as fp:
+        fp.write(f"{args.config_dir}")
+
     chals_folder = "challenges"
 
     if args.mode == "setup":
