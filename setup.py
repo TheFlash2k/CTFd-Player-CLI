@@ -13,7 +13,8 @@ setup(
         "python-dotenv==1.0.1",
         "Requests==2.32.3",
         "argcomplete",
-        "argparse"
+        "argparse",
+        "tabulate"
     ],
     entry_points={
         'console_scripts': [
