@@ -5,7 +5,20 @@ from .logger import logger
 from datetime import datetime
 
 class GenerateToken(object):
-    def __init__(self, url, username, password):
+    """
+    Class to generate a token for the CTFd instance.
+
+    Attributes:
+        url: The URL of the CTFd instance
+        username: The username to login with
+        password: The password to login with
+
+    Methods:
+        generate_token: Generates a token for the CTFd instance
+
+    """
+
+    def __init__(self, url: str, username: str, password: str):
         self.username = username
         self.password = password
 
@@ -17,11 +30,21 @@ class GenerateToken(object):
             ))
         self.session = requests.Session()
 
-    def __get_csrf_nonce(self, page = ""):
+    def __get_csrf_nonce(self, page = "") -> str:
+        """
+        Args:
+            page: The page to get the CSRF token from
+        Returns:
+            The CSRF token from the page
+        """
+
         r = self.session.get(f"{self.url}{page}")
         return re.findall("'csrfNonce': \"(.*?)\"", r.text)[0]
 
-    def _login(self):
+    def _login(self) -> None:
+        """
+        Logs in to the CTFd instance using the provided credentials
+        """
         logger.info(f"Logging in as: {self.username}")
 
         r = self.session.post(f"{self.url}/login", data={

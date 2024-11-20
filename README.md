@@ -16,7 +16,7 @@ $ sudo python3 setup.py install
 The usage is fairly is simple. Consider a scenario where you're playing a CTF. The first thing you'll do is create a folder, let's say, `ABC-CTF`. The next thing you'll need to do is run:
 
 ```bash
-$ ctfd setup [--url <URL>] [--token <TOKEN>]
+$ ctfd init [--url <URL>] [--token <TOKEN>]
 ```
 
 > If no arguments are provided, you'll be prompted to manually enter those. You **CAN** skip entering token by just pressing enter.
@@ -65,6 +65,14 @@ $ ctfd submit --challenge-id <ID> --flag <FLAG>
 ```
 
 For your ease, whenever you run: `ctfd challenges`, I will create two scripts in the challenge directory: `launch.sh` and `submit.sh`. `launch.sh` will only exist for challenges that have their type = container. But `submit.sh` will be there for all challenges. You can submit a challenge using `./submit.sh <flag>`. Whereas, `launch.sh` won't take any parameter and will just start the instance for that specific challenge.
+
+You can also see the scoreboard and solves on a particular challenge:
+
+```bash
+$ ctfd scoreboard [-n <max-results> {Default: 10}]
+# OR
+$ ctfd solves [--challenge-id <ID>] [--challenge-name <NAME>]
+```
 
 ## Autocompletions
 

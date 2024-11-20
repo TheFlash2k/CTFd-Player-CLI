@@ -26,16 +26,7 @@ class Logger(object):
             bold_red = "\x1b[31;1m"
             reset = "\x1b[0m"
             format = "%(asctime)s %(levelname)s %(message)s"
-
-            ### UNCOMMENT THIS FOR VERBOSITY ###
-            # FORMATS = {
-            #     logging.DEBUG: f"{yellow}{format.split()[0].split()[0]}{reset} {green}{format.split()[1]}{reset} {format.split()[2]}",
-            #     logging.INFO: f"{yellow}{format.split()[0].split()[0]}{reset} {blue}{format.split()[1]}{reset} {format.split()[2]}",
-            #     logging.WARNING: f"{yellow}{format.split()[0].split()[0]}{reset} {yellow}{format.split()[1]}{reset} {format.split()[2]}",
-            #     logging.ERROR: f"{yellow}{format.split()[0].split()[0]}{reset} {red}{format.split()[1]}{reset} {format.split()[2]}",
-            #     logging.CRITICAL: f"{yellow}{format.split()[0]}{reset} {bold_red}{format.split()[1]}{reset} {format.split()[2]}",
-            # }
-
+            
             FORMATS = {
                 logging.DEBUG: f"[{green}{format.split()[1]}{reset}] {format.split()[2]}",
                 logging.INFO: f"[{blue}{format.split()[1]}{reset}] {format.split()[2]}",

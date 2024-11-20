@@ -3,18 +3,20 @@
 import argparse
 import argcomplete
 import os
+import tabulate
 from .utils import *
 
-def do_checks(args, _config, check_token=False, check_challenges=False):
+def do_checks(args: argparse.Namespace, _config: dict, check_token: bool = False, check_challenges: bool = False):
 
     global config
     config = get_config(_config)
-
-    if not config and not args.url:
-        logger.error("Configuration file not found. Please run `ctfd setup` to generate it first or specify url with --url")
-        exit(1)
     
     if not hasattr(args, "url"): setattr(args, "url", "")
+
+    if not config and not args.url:
+        logger.error("Configuration file not found. Please run `ctfd init` to generate it first or specify url with --url")
+        exit(1)
+    
     args.url = args.url if args.url else config["CTFD"].get("URL", "")
 
     if not args.url:
@@ -33,7 +35,7 @@ def do_checks(args, _config, check_token=False, check_challenges=False):
             logger.error("No challenges found. Please run `ctfd sync` to fetch the challenges from CTFd.")
             exit(1)
 
-def check_downloaded_challenges(_chals, chals_folder):
+def check_downloaded_challenges(_chals: dict, chals_folder: str):
     """
     Check if the challenges are already downloaded. If they are, we'll update the attribute `is_downloaded` to True
     for the challenges that are already downloaded.
@@ -62,6 +64,7 @@ def _get_path() -> str:
                 _path = fp.read().strip()
         else:
             return None
+        
     return os.path.join(_path, "config.json")
 
 def get_challenges(attr: str = "name"):
@@ -87,14 +90,16 @@ def get_container_challenges(attr: str = "name"):
 def main():
     parser = argparse.ArgumentParser(description='CTFd CLI for CTF Players to automate their workflows.')
     parser.add_argument('--config-dir', '-c', type=str, help='The directory where the configuration will be stored', default='.ctfd', dest='config_dir')
+    parser.add_argument('--dir-name', '-d', type=str, help='Name of the folder', default="challenges", dest='chals_folder')
     parser.add_argument('--skip', '-s', action='store_true', help='Skip checking connection to CTFd instance', default=False, dest='skip')
 
     # Default args
     subparsers = parser.add_subparsers(title='Mode to operate the CLI in', dest='mode')
     
     # Subparser for setting up the CTF folder structure
-    setup_parser = subparsers.add_parser('setup', help="Setup the CTFd folder")
+    setup_parser = subparsers.add_parser('init', help="Setup the CTFd folder")
     setup_parser.add_argument('--token', '-t', type=str, help='CTFd Token', default=None)
+    setup_parser.add_argument('--no-token', '-n', action='store_true', help='Do not prompt user for token', default=False)
     setup_parser.add_argument('--url', '-u', type=str, help='CTFd instance URL', default=None)
     setup_parser.add_argument('--force', '-f', action='store_true',help='Overwrite config file if it already exists', default=False)
 
@@ -104,7 +109,7 @@ def main():
     generator_parser.add_argument('--name', '-n', type=str, help='Username or email for login', required=True)
     generator_parser.add_argument('--password', '-p', type=str, help='Password for CTFd user')
     generator_parser.add_argument('--force', '-f', action='store_true',help='Overwrite token if already exists in the config file.', default=False)
- 
+
     # Subparser for sync
     sync_parser = subparsers.add_parser('sync', help="Sync the challenges with the CTFd instance")
     sync_parser.add_argument('--force', '-f', action='store_true',help='Overwrite challenges if already exists in the config file.', default=False)
@@ -127,25 +132,36 @@ def main():
     instance_parser.add_argument('--challenge-id', '-i', type=int, help="Challenge ID", default=None, dest='chal_id', choices=get_container_challenges("id"))
     instance_parser.add_argument('--challenge-name', '-n', type=str, help="Challenge Name (We'll fetch the challenge-id for you)", default=None, dest='chal_name', choices=get_container_challenges("name"))
 
+    # Subparser for scoreboard:
+    scoreboard_parser = subparsers.add_parser('scoreboard', help="Get the scoreboard for the CTFd instance")
+    scoreboard_parser.add_argument('-n', '--number', type=int, help="Number of top teams to display", default=10)
+
+    # Solves subparser
+    solves_parser = subparsers.add_parser('solves', help="Get the solves of a specific challenge")
+    solves_parser.add_argument('--challenge-id', '-i', type=int, help="Challenge ID", default=None, dest='chal_id', choices=get_challenges("id"))
+    solves_parser.add_argument('--challenge-name', '-n', type=str, help="Challenge Name (We'll fetch the challenge-id for you)", default=None, dest='chal_name', choices=get_challenges("name"))
+
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
     # default config
-    args.config_dir = os.path.abspath(args.config_dir)
+    chals_folder = args.chals_folder
+    args.config_dir = os.path.abspath(os.path.join(chals_folder, args.config_dir))
     _config = os.path.join(args.config_dir, "config.json")
 
-    # store the last config file path in /tmp/.ctfd.cache
-    with open("/tmp/.ctfd.cache", "w") as fp:
-        fp.write(f"{args.config_dir}")
+    # store the updated config file path in /tmp/.ctfd.cache
+    if not os.path.exists("/tmp/.ctfd.cache") or (
+        os.path.exists("/tmp/.ctfd.cache") and not getattr(args, "force", True)):
+        
+        with open("/tmp/.ctfd.cache", "w") as fp:
+            fp.write(f"{args.config_dir}")
 
-    chals_folder = "challenges"
-
-    if args.mode == "setup":
+    if args.mode == "init":
 
         if not args.url:
             args.url = input("Enter the CTFd URL: ")
 
-        if not args.token:
+        if not args.token and not args.no_token:
             args.token = input("Enter the CTFd token: ")
             if not args.token: # i mean, if it works, it works, right?
                 logger.warning("No token has been provided, make sure you run `ctfd generate-token` with the appropriate credentails to generate a token.")
@@ -438,3 +454,81 @@ def main():
             
             if msg := resp.get("success", ""):
                 logger.info("Instance stopped successfully.")
+
+    elif args.mode == "scoreboard":
+        do_checks(args, _config)
+
+        ctfd = CTFd_Handler(args.url, args.token, args.skip)
+        logger.info(f"Getting scoreboard for the CTFd instance")
+
+        scoreboard = ctfd.get_scoreboard(args.number)
+        if not scoreboard:
+            logger.error("No scoreboard found.")
+            exit(1)
+
+        headers = ["Rank", "Team", "Score"]
+        table = []
+
+        for pos, team in scoreboard.items():
+            table.append([pos, team["name"], team["score"]])
+
+        print(tabulate.tabulate(table[:args.number], headers, tablefmt="fancy_outline"))
+
+    elif args.mode == "solves":
+        do_checks(args, _config)
+
+        if not args.chal_id and not args.chal_name:
+            logger.error("Please specify either challenge ID or challenge Name")
+            exit(1)
+
+        if args.chal_name:
+            challenges = config.get("Challenges", [])
+            if not challenges:
+                logger.error("No challenges found. Please run `ctfd sync` to fetch the challenges from CTFd.")
+                exit(1)
+            chal = None
+            for challenge in challenges:
+                if challenge["name"] == args.chal_name:
+                    chal = ChallengeModel(**challenge)
+                    break
+
+            if not chal:
+                logger.error(f"No challenge found for name {args.chal_name}")
+                exit(1)
+
+            args.chal_id = chal.id
+
+        if args.chal_id:
+            challenges = config.get("Challenges", [])
+            if not challenges:
+                logger.error("No challenges found. Please run `ctfd sync` to fetch the challenges from CTFd.")
+                exit(1)
+            chal = None
+            for challenge in challenges:
+                if challenge["id"] == args.chal_id:
+                    chal = ChallengeModel(**challenge)
+                    break
+
+            if not chal:
+                logger.error(f"No challenge found for ID {args.chal_id}")
+                exit(1)
+
+        ctfd = CTFd_Handler(args.url, args.token, args.skip)
+        logger.info(f"Getting solves for {chal}")
+
+        solves = ctfd.get_solves(chal.id)
+        if not solves:
+            logger.error(f"No solves found for {chal.name}")
+            exit(1)
+
+        headers = ["Name", "Date"]
+        table = []
+
+        for solve in solves:
+            table.append([solve["name"], solve["date"]])
+
+        print(tabulate.tabulate(table, headers, tablefmt="fancy_outline"))
+
+    else:
+        logger.error("Invalid mode specified.")
+        parser.print_help()

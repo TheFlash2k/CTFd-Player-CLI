@@ -26,14 +26,21 @@ def fix_url(url: str) -> str:
 
     return url
 
-def get_config(_config) -> dict:
+def get_config(_config_path: str) -> dict:
 
-    if not os.path.exists(_config):
+    if not os.path.exists(_config_path) and not os.path.exists("/tmp/.ctfd.cache"):
         return {}
     
-    with open(_config) as fp:
-        _ = json.load(fp)
-    
+    if os.path.exists("/tmp/.ctfd.cache") and not os.path.exists(_config_path):
+        with open("/tmp/.ctfd.cache") as f:
+            _config_path = os.path.join(f.read().strip(), "config.json")
+
+    try:
+        with open(_config_path) as fp:
+            _ = json.load(fp)
+    except FileNotFoundError:
+        return {}
+        
     return _
 
 def write_config(_key: str, _value: dict, _config: str, mode: str = "w") -> None:

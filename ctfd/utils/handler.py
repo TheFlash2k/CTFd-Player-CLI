@@ -10,6 +10,8 @@ class Mode(Enum):
     PATCH = requests.patch
 
 class RequestHandler:
+
+    @staticmethod
     def MakeRequest(mode : Mode, url: str, token, headers: dict = {}, **kwargs):
 
         if token == None:
@@ -17,7 +19,7 @@ class RequestHandler:
 
         headers["Authorization"] = f"Token {token}"
         headers["Content-Type"] = "application/json"
-        headers["User-Agent"] = "CTFd-CLI-v0.1" # Cuz why not..
+        headers["User-Agent"] = "CTFd-CLI-v0.1-by-@TheFlash2k" # Cuz why not..
 
         try:
             return mode(url, headers=headers, **kwargs)

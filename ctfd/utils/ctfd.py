@@ -3,6 +3,17 @@ from .handler import RequestHandler, Mode, requests
 from .utils import get_env, fix_url
 
 class CTFd:
+    """
+    Class to interact with the CTFd instance.
+
+    Attributes:
+        ctfd_instance: The URL of the CTFd instance
+        ctfd_token: The token to interact with the CTFd instance
+
+    Methods:
+        is_working: Checks if the CTFd instance is working
+    """
+
     def __init__(self, instance: str, token: str, skip: bool = False):
         
         self.ctfd_instance = get_env(key="CTFD_URL", curr=instance, err_msg="Environment variable \"CTFD_URL\" is not set")
@@ -23,7 +34,16 @@ class CTFd:
             else:
                 logger.info("CTFd instance is working.")
 
-    def is_working(self):
+    def is_working(self) -> bool:
+        """
+        Checks if the CTFd instance
+        is working or not by making a request
+        to the /api/v1/users endpoint.
+
+        Returns:
+            True if the CTFd instance is working
+            False otherwise
+        """
         r = RequestHandler.MakeRequest(
             mode=Mode.GET,
             url=f"{self.ctfd_instance}/api/v1/users",
@@ -34,8 +54,15 @@ class CTFd:
 class ChallengeModel:
     """
     Simple model for the challenges deployed on the CTFd instance.
+
+    Attributes:
+        id: The id of the challenge
+        name: The name of the challenge
+        category: The category of the challenge
+        type: The type of the challenge
+        is_downloaded: Whether the challenge is downloaded or not
     """
-    def __init__(self, id: int, name: str, category: str, type: str, is_downloaded = False, **kwargs):
+    def __init__(self, id: int, name: str, category: str, type: str, is_downloaded: bool = False, **kwargs):
         self.id = id
         self.name = name
         self.category = category
@@ -48,7 +75,7 @@ class ChallengeModel:
     def __repr__(self):
         return f"Challenge: {self.name} ({self.id})"
 
-    def __dict__(self, no_id=False):
+    def __dict__(self, no_id: bool = False):
         _ = {
             "name": self.name,
             "category": self.category,
@@ -59,13 +86,36 @@ class ChallengeModel:
         return _
 
 class CTFd_Handler:
-    """ This class' methods will be used for interaction with the CTFd instance. """
+    """
+    Class to interact with the CTFd instance.
+
+    Attributes:
+        ctfd: The CTFd object
+
+    Methods:
+
+        # Challenges
+        get_challenges: Returns the list of all the challenges currently deployed
+        get_challenge: Returns the challenge with the given id
+        download_file: Downloads the file from the given url
+
+        # Flags
+        submit_flag: Submits the flag for the challenge with the given id
+
+        # Instances
+        start_instance: Starts the challenge instance
+        extend_instance: Extends the challenge instance
+        stop_instance: Stops the challenge instance
+    """
     def __init__(self, instance: str, token: str, skip: bool = False):
         self.ctfd = CTFd(instance=instance, token=token, skip=skip)
     
     def get_challenges(self) -> list:
         """
-        Returns the list of all the challenges currently deployed
+        Returns the list of all the challenges currently deployed.
+
+        Returns:
+            List of all the challenges currently deployed
         """
         return RequestHandler.MakeRequest(
             mode=Mode.GET,
@@ -75,7 +125,10 @@ class CTFd_Handler:
 
     def get_challenge(self, chal_id: int) -> dict:
         """
-        Returns the challenge with the given id.
+        Fetches the challenge with the given id.
+
+        Returns:
+            The challenge information with the given id
         """
         _ = RequestHandler.MakeRequest(
             mode=Mode.GET,
@@ -86,7 +139,7 @@ class CTFd_Handler:
             return {}
         return _["data"]
     
-    def download_file(self, endpoint, filename) -> bytes:
+    def download_file(self, endpoint: str, filename: str) -> None:
         """
         Downloads the file from the given url.
         """
@@ -105,6 +158,9 @@ class CTFd_Handler:
     def submit_flag(self, chal_id: int, flag: str) -> dict:
         """
         Submits the flag for the challenge with the given id.
+
+        Returns:
+            The response from the CTFd instance
         """
         return RequestHandler.MakeRequest(
             mode=Mode.POST,
@@ -116,6 +172,9 @@ class CTFd_Handler:
     def start_instance(self, chal_id: int) -> dict:
         """
         Starts the challenge instance.
+
+        Returns:
+            The response from the CTFd instance
         """
         return RequestHandler.MakeRequest(
             mode=Mode.POST,
@@ -127,6 +186,9 @@ class CTFd_Handler:
     def extend_instance(self, chal_id: int) -> dict:
         """
         Extends the challenge instance.
+
+        Returns:
+            The response from the CTFd instance
         """
         return RequestHandler.MakeRequest(
             mode=Mode.POST,
@@ -138,6 +200,9 @@ class CTFd_Handler:
     def stop_instance(self, chal_id: int) -> dict:
         """
         Stops the challenge instance.
+    
+        Returns:
+            The response from the CTFd instance
         """
         return RequestHandler.MakeRequest(
             mode=Mode.POST,
@@ -145,3 +210,29 @@ class CTFd_Handler:
             token=self.ctfd.ctfd_token,
             json={"chal_id": chal_id}
         ).json()
+    
+    def get_scoreboard(self, n: int = 10) -> dict:
+        """
+        Fetches the scoreboard from the CTFd instance.
+
+        Returns:
+            The response from the CTFd instance
+        """
+        return RequestHandler.MakeRequest(
+            mode=Mode.GET,
+            url=f"{self.ctfd.ctfd_instance}/api/v1/scoreboard/top/{n}",
+            token=self.ctfd.ctfd_token,
+        ).json()["data"]
+    
+    def get_solves(self, chal_id: int) -> dict:
+        """
+        Fetches the solves for the challenge with the given id.
+
+        Returns:
+            The response from the CTFd instance
+        """
+        return RequestHandler.MakeRequest(
+            mode=Mode.GET,
+            url=f"{self.ctfd.ctfd_instance}/api/v1/challenges/{chal_id}/solves",
+            token=self.ctfd.ctfd_token
+        ).json()["data"]
