@@ -147,14 +147,21 @@ def main():
     # default config
     chals_folder = args.chals_folder
     args.config_dir = os.path.abspath(os.path.join(chals_folder, args.config_dir))
-    _config = os.path.join(args.config_dir, "config.json")
+
+    if os.path.exists("/tmp/.ctfd.cache"):
+        logger.warning("Using the cached configuration file path.")
 
     # store the updated config file path in /tmp/.ctfd.cache
-    if not os.path.exists("/tmp/.ctfd.cache") or (
-        os.path.exists("/tmp/.ctfd.cache") and not getattr(args, "force", True)):
-        
+    if not os.path.exists("/tmp/.ctfd.cache"):
         with open("/tmp/.ctfd.cache", "w") as fp:
             fp.write(f"{args.config_dir}")
+    else:
+        with open("/tmp/.ctfd.cache") as fp:
+            args.config_dir = fp.read().strip()
+
+    _config = os.path.join(args.config_dir, "config.json")
+    # Bad coding. Don't do it like this. but works.
+    args.chals_folder = chals_folder = os.path.abspath(os.path.join(args.config_dir, os.pardir))
 
     if args.mode == "init":
 
@@ -360,6 +367,14 @@ def main():
 
         elif resp["status"] == "correct":
             logger.info("🎉🎉🎉 Flag submitted successfully 🎉🎉🎉")
+
+            if chal.type == "container":
+                logger.info("Stopping instance for the challenge.")
+                if resp := ctfd.stop_instance(chal.id):
+                    if _err := resp.get('error', ''):
+                        logger.error(f"Error: {_err}")
+                        exit(1)
+                    logger.info("Instance stopped successfully.")
 
         elif resp["status"] == "already_solved":
             logger.warning("🔒🔒🔒 Challenge already solved by your team 🔒🔒🔒")
