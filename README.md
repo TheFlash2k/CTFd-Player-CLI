@@ -82,10 +82,15 @@ Under the hood, this tool utilizes `argcomplete` library for autocomplettions. T
 $ activate-global-python-argcomplete
 ```
 
-After this is done, add this to your `.zsh/.bashrc`:
+After this is done, add this to your `.zsh/.bashrc`
 
 ```bash
 eval "$(register-python-argcomplete ctfd)"
 ```
 
 Once this is done, you will tab autocompletion for your `ctfd` utility.
+
+
+## Future Work
+
+Extracting components from the other [CTFd CLI](https://github.com/TheFlash2k/CTFd-CLI) and then migrating the code to a single CLI application.
